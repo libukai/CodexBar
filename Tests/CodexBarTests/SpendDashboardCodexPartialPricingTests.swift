@@ -31,7 +31,8 @@ struct SpendDashboardCodexPartialPricingTests {
             inputs: [.init(provider: .codex, displayName: "Codex", snapshot: snapshot)],
             requestedDays: 30,
             now: Self.now,
-            calendar: Self.calendar)
+            calendar: Self.calendar,
+            excludesTokenOnlyCosts: true)
         #expect(model.groups.isEmpty)
         let widget = try #require(UsageStore.widgetTokenUsageSummary(from: snapshot, provider: .codex))
         #expect(widget.sessionCostUSD == nil)

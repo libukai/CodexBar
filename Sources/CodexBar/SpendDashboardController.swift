@@ -1695,6 +1695,7 @@ final class SpendDashboardController {
             preferredCurrencyCode: configuration?.preferredCurrencyCode ?? "auto",
             hiddenSourceIDs: Set(configuration?.hiddenSourceIDs ?? []),
             hideNativeCodexWhenOpenCodexPresent: configuration?.hideNativeCodexCostWhenOpenCodexPresent ?? false,
+            excludesTokenOnlyCosts: true,
             selectedDay: self.selectedDay)
         if publish {
             self.publishCurrentState()
