@@ -415,7 +415,8 @@ struct CostHistoryChartMenuView: View {
             return nil
         }
         return switch hint {
-        case let .localized(key): L(key)
+        case let .localized(key):
+            L(provider != .codex && key == "codex_api_estimate_hint" ? "cost_estimate_hint" : key)
         case .estimate: UsageFormatter.costEstimateHint(provider: provider)
         case let .literal(text): L(text)
         }
