@@ -31,19 +31,27 @@ struct SpendDashboardCodexPartialPricingTests {
             inputs: [.init(provider: .codex, displayName: "Codex", snapshot: snapshot)],
             requestedDays: 30,
             now: Self.now,
-            calendar: Self.calendar,
-            excludesTokenOnlyCosts: true)
-        #expect(model.groups.isEmpty)
+            calendar: Self.calendar)
+        let group = try #require(model.groups.first)
+        let expectedCompleteness: SpendDashboardModel.ModelHistoryCompleteness = partial ? .incomplete : .complete
+
+        #expect(group.modelHistoryCompleteness == expectedCompleteness)
+        #expect(group.hasPartialCost == partial)
+        #expect(group.models.first?.totalCost == 2)
+        #expect(spendDashboardMetricText(
+            cost: group.totalCost, tokens: nil, currencyCode: "USD", costIsLowerBound: group.hasPartialCost)
+            == (partial ? "≥ $2.00" : "$2.00"))
+        #expect(spendDashboardCoverageChipText(group.coverage).contains("Unpriced \(partial ? 1 : 0)"))
+
         let widget = try #require(UsageStore.widgetTokenUsageSummary(from: snapshot, provider: .codex))
-        #expect(widget.sessionCostUSD == nil)
-        #expect(widget.last30DaysCostUSD == nil)
-        #expect(widget.sessionTokens == 600_000)
+        #expect(widget.sessionCostUSD == group.totalCost)
+        #expect(widget.last30DaysCostUSD == group.totalCost)
         let payload = CodexBarCLI.makeCostPayload(provider: .codex, snapshot: snapshot, error: nil)
         let json = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(payload)) as? [String: Any])
         let daily = try #require(json["daily"] as? [[String: Any]])
         let coverage = try #require(json["coverage"] as? [String: Any])
-        #expect(json["sessionCostUSD"] as? Double == 2)
-        #expect(daily.first?["totalCost"] as? Double == 2)
+        #expect(json["sessionCostUSD"] as? Double == group.totalCost)
+        #expect(daily.first?["totalCost"] as? Double == group.totalCost)
         #expect(coverage["unpriced"] as? Int == (partial ? 1 : 0))
     }
 

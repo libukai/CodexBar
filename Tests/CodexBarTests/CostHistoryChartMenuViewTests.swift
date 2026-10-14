@@ -195,13 +195,13 @@ struct CostHistoryChartMenuViewTests {
     }
 
     @Test
-    func `Codex subscription chart does not substitute API dollars for missing tokens`() {
+    func `Codex daily chart falls back to cost when token totals are unavailable`() {
         let daily = [
             Self.dailyEntry(date: "2026-08-12", totalTokens: nil, costUSD: 1.25),
         ]
 
-        #expect(CostHistoryChartMenuView._availableMetricsForTesting(provider: .codex, daily: daily) == [])
-        #expect(CostHistoryChartMenuView._defaultMetricForTesting(provider: .codex, daily: daily) == .tokens)
+        #expect(CostHistoryChartMenuView._availableMetricsForTesting(provider: .codex, daily: daily) == [.cost])
+        #expect(CostHistoryChartMenuView._defaultMetricForTesting(provider: .codex, daily: daily) == .cost)
     }
 
     @Test
@@ -213,7 +213,7 @@ struct CostHistoryChartMenuViewTests {
 
         #expect(
             CostHistoryChartMenuView._availableMetricsForTesting(provider: .codex, daily: daily)
-                == [.tokens])
+                == [.tokens, .cost])
         #expect(
             CostHistoryChartMenuView._chartValuesForTesting(
                 provider: .codex,
@@ -223,7 +223,7 @@ struct CostHistoryChartMenuViewTests {
             CostHistoryChartMenuView._chartValuesForTesting(
                 provider: .codex,
                 daily: daily,
-                metric: .cost) == [])
+                metric: .cost) == [1.25])
     }
 
     @Test
@@ -256,7 +256,7 @@ struct CostHistoryChartMenuViewTests {
     func `Codex chart explains that its token estimate is not a subscription bill`() {
         #expect(
             CostHistoryChartMenuView.estimateDisclaimer(provider: .codex)
-                == "Channel: ChatGPT subscription · amount cannot be calculated from token logs")
+                == "API-equivalent value · subscription speed weights 1 / 2.5 / 8")
         #expect(CostHistoryChartMenuView.estimateDisclaimer(provider: .claude) == nil)
     }
 

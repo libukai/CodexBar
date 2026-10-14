@@ -67,7 +67,6 @@ struct SpendDashboardPublication: Sendable {
             preferredCurrencyCode: preferredCurrencyCode,
             hiddenSourceIDs: hiddenSourceIDs,
             hideNativeCodexWhenOpenCodexPresent: hideNativeCodexWhenOpenCodexPresent,
-            excludesTokenOnlyCosts: true,
             selectedDay: selectedDay)
     }
 

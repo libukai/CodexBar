@@ -190,7 +190,7 @@ enum CostUsagePricing {
     static func codexBuiltInPricingFingerprint() -> String {
         var parts = [
             "priorityInputTokenLimit=\(self.codexPriorityInputTokenLimit)",
-            "fastPricingDefinition=api-ultrafast6-v2",
+            "fastPricingDefinition=subscription-api-equivalent-flat-1-2.5-8-v3",
         ]
         for model in self.codex.keys.sorted() {
             guard let pricing = self.codex[model] else { continue }
@@ -685,7 +685,8 @@ enum CostUsagePricing {
         inputTokens: Int,
         cachedInputTokens: Int,
         cacheWriteInputTokens: Int = 0,
-        outputTokens: Int) -> Double
+        outputTokens: Int,
+        applyLongContextRates: Bool = true) -> Double
     {
         // Codex/OpenAI reports `input_tokens` as the total prompt size, with cached reads as a
         // SUBSET of it. Cache writes (when tracked separately, e.g. Pi) are also a subset of the
@@ -697,7 +698,7 @@ enum CostUsagePricing {
         let nonCached = remainingAfterCache - cacheWrite
         let cachedRate = pricing.cacheReadInputCostPerToken ?? pricing.inputCostPerToken
 
-        let usesLongContextRates = pricing.thresholdTokens.map { totalInput > $0 } ?? false
+        let usesLongContextRates = applyLongContextRates && (pricing.thresholdTokens.map { totalInput > $0 } ?? false)
         let inputRate = usesLongContextRates
             ? pricing.inputCostPerTokenAboveThreshold ?? pricing.inputCostPerToken
             : pricing.inputCostPerToken

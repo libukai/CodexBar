@@ -462,13 +462,16 @@ struct InlineCostHistoryDashboardLabelTests {
 
         let dashboard = try #require(model.inlineUsageDashboard)
         #expect(dashboard.currencyCode == "USD")
-        #expect(dashboard.accessibilityLabel == "Codex: Token history")
+        #expect(dashboard.accessibilityLabel == "Codex: 30d cost")
         #expect(dashboard.kpis.map(\.title) == [
             "Today",
             "30d",
+            "Latest tokens",
+            "30d tokens",
         ])
         #expect(dashboard.detailLines == [
-            "Channel: ChatGPT subscription · amount cannot be calculated from token logs",
+            "Top model: test-model",
+            "API-equivalent value · subscription speed weights 1 / 2.5 / 8",
         ])
 
         let japaneseAccessibilityLabels = CodexBarLocalizationOverride.$appLanguage.withValue("ja") {
@@ -500,7 +503,7 @@ struct InlineCostHistoryDashboardLabelTests {
                     now: now)).inlineUsageDashboard?.accessibilityLabel
             }
         }
-        #expect(japaneseAccessibilityLabels == ["Codex: トークン履歴", "Codex: トークン履歴"])
+        #expect(japaneseAccessibilityLabels == ["Codex: 過去7日間のコスト", "Codex: 過去30日間のコスト"])
     }
 
     @Test
@@ -560,18 +563,18 @@ struct InlineCostHistoryDashboardLabelTests {
 
         let points = try #require(model.inlineUsageDashboard?.points)
         #expect(points.map(\.id) == ["2026-08-21", "2026-08-22", "2026-08-23", "2026-08-24"])
-        #expect(points.map(\.value) == [300, 0, 0, 400])
+        #expect(points.map(\.value) == [3, 0, 0, 4])
         #expect(points.map(\.accessibilityValue) == [
-            "Aug 21, 2026: 300 tokens",
-            "Aug 22, 2026: 0 tokens",
-            "Aug 23, 2026: 0 tokens",
-            "Aug 24, 2026: 400 tokens",
+            "Aug 21, 2026: $3.00 · 300 tokens",
+            "Aug 22, 2026: $0.00 · 0 tokens",
+            "Aug 23, 2026: $0.00 · 0 tokens",
+            "Aug 24, 2026: $4.00 · 400 tokens",
         ])
         let hoverDetails: [InlineUsageDashboardModel.HoverDetail?] = [
-            .init(dateLabel: "Aug 21, 2026", cost: nil, tokenCount: 300, currencyCode: "USD", tokensOnly: true),
-            .init(dateLabel: "Aug 22, 2026", cost: nil, tokenCount: 0, currencyCode: "USD", tokensOnly: true),
-            .init(dateLabel: "Aug 23, 2026", cost: nil, tokenCount: 0, currencyCode: "USD", tokensOnly: true),
-            .init(dateLabel: "Aug 24, 2026", cost: nil, tokenCount: 400, currencyCode: "USD", tokensOnly: true),
+            .init(dateLabel: "Aug 21, 2026", cost: 3, tokenCount: 300, currencyCode: "USD"),
+            .init(dateLabel: "Aug 22, 2026", cost: 0, tokenCount: 0, currencyCode: "USD"),
+            .init(dateLabel: "Aug 23, 2026", cost: 0, tokenCount: 0, currencyCode: "USD"),
+            .init(dateLabel: "Aug 24, 2026", cost: 4, tokenCount: 400, currencyCode: "USD"),
         ]
         #expect(points.map(\.hoverDetail) == hoverDetails)
     }
@@ -653,7 +656,7 @@ struct InlineCostHistoryDashboardLabelTests {
 
 extension InlineCostHistoryDashboardLabelTests {
     @Test
-    func `codex subscription hides derived currency windows and shows raw tokens`() throws {
+    func `codex and claude show current-window KPIs and previous-window history`() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try #require(TimeZone(secondsFromGMT: 0))
         let now = try #require(calendar.date(from: DateComponents(
@@ -737,10 +740,28 @@ extension InlineCostHistoryDashboardLabelTests {
             now: now))
 
         let dashboard = try #require(model.inlineUsageDashboard)
-        #expect(dashboard.kpis.map(\.title) == ["Today", "30d"])
-        #expect(dashboard.kpis.map(\.value) == ["1K tokens", "1.4K tokens"])
-        #expect(dashboard.quotaWindows.isEmpty)
-        #expect(dashboard.valueStyle == .tokens)
+        #expect(dashboard.kpis.map(\.title) == [
+            "Today",
+            "Est. Current window",
+            "Latest tokens",
+            "Est. Current window tokens",
+            "30d",
+            "30d tokens",
+        ])
+        #expect(dashboard.kpis.map(\.value) == [
+            "$10.00",
+            "$10.00",
+            "1K",
+            "1K",
+            "$14.00",
+            "1.4K",
+        ])
+        #expect(dashboard.detailLines.contains { $0.contains("Previous window") } == false)
+        #expect(dashboard.quotaWindows.map(\.title) == ["Current window", "Previous window"])
+        #expect(dashboard.quotaWindows.map(\.value) == ["$10.00 · 1K", "$4.00 · 400"])
+        let currentRange = try #require(dashboard.quotaWindows.first?.range)
+        #expect(currentRange.contains("11"))
+        #expect(currentRange.contains("18"))
     }
 
     @Test

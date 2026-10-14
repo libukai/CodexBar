@@ -12,7 +12,8 @@ extension CostUsagePricing {
         modelsDevCatalog: ModelsDevCatalog? = nil,
         modelsDevCacheRoot: URL? = nil,
         customPricing: CostUsageCustomPricing? = nil,
-        pricingResolver: CodexResolver? = nil) -> Double?
+        pricingResolver: CodexResolver? = nil,
+        applyLongContextRates: Bool = true) -> Double?
     {
         let overlay = customPricing ?? self.customPricingOverlay()
         if overlay.rates(providerID: self.codexModelsDevProviderID, model: model) != nil {
@@ -30,7 +31,7 @@ extension CostUsagePricing {
             modelsDevCacheRoot: modelsDevCacheRoot,
             pricingResolver: pricingResolver)
         else { return nil }
-        if aggregate,
+        if aggregate, applyLongContextRates,
            let thresholdTokens = pricing.thresholdTokens,
            max(0, inputTokens) > thresholdTokens
         {
@@ -41,6 +42,7 @@ extension CostUsagePricing {
             inputTokens: inputTokens,
             cachedInputTokens: cachedInputTokens,
             cacheWriteInputTokens: cacheWriteInputTokens,
-            outputTokens: outputTokens)
+            outputTokens: outputTokens,
+            applyLongContextRates: applyLongContextRates)
     }
 }

@@ -110,9 +110,15 @@
     }
   },
   "limitations": [
-    "Token rows do not identify the billing channel. The channel must come from explicit evidence or user configuration.",
-    "Subscription token logs do not expose a per-token monetary debit. No monetary amount or reference index is invented.",
-    "Priced API and purchased-credit amounts use the published rate card and requested tier, not a verified invoice. Historical rates and server-accepted tier need independent confirmation.",
-    "Purchased Credits have no API 272K context uplift or separate cache-write charge."
-  ]
+    "Subscription amount means API-standard-price-equivalent USD using subscription speed multipliers; not an actual bill or official quota debit.",
+    "Subscription equivalents use flat standard API input/cached/output rates without the API long-context surcharge.",
+    "Billing channel is explicitly selected, not inferred from model_provider=openai.",
+    "Requested service tier is from local logs; server-accepted tier is not independently confirmed."
+  ],
+  "subscription_speed_multipliers": {
+    "standard": "1",
+    "priority": "2.5",
+    "fast": "2.5",
+    "ultrafast": "8"
+  }
 }

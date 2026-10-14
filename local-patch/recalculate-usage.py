@@ -26,14 +26,16 @@ def calculate(row, channel='unknown'):
     tokens = [total_input - cached, cached, max(0, int(row.get('output', 0)))]
     result = {'model': model, 'requested_tier': tier, 'tokens': dict(zip(TOKEN_KEYS, tokens)),
               'channel': channel, 'amount': None, 'unit': None, 'status': 'channel_unknown'}
-    if channel == 'chatgpt_subscription':
-        result['status'] = 'no_published_per_token_monetary_price'
-        return result
     if channel == 'unknown':
         return result
     multiplier = None
     rates = None
-    if channel == 'api':
+    if channel == 'chatgpt_subscription':
+        result['unit'] = 'USD_API_equivalent'
+        api = TABLE['api'].get(model)
+        rates = api['short'] if api else None
+        multiplier = TABLE['subscription_speed_multipliers'].get(tier)
+    elif channel == 'api':
         result['unit'] = 'USD'
         api = TABLE['api'].get(model)
         if api:
@@ -47,7 +49,8 @@ def calculate(row, channel='unknown'):
     if rates is not None and multiplier is not None:
         result['amount'] = sum(Decimal(n) * Decimal(p) * Decimal(multiplier) / MILLION
                                for n, p in zip(tokens, rates))
-        result['status'] = 'calculated_from_published_rates_not_invoice'
+        result['status'] = ('subscription_api_equivalent_not_invoice' if channel == 'chatgpt_subscription'
+                            else 'calculated_from_published_rates_not_invoice')
     return result
 
 
@@ -83,7 +86,7 @@ def build_report(rows, date, channel='unknown'):
         'channel_basis': 'explicit user selection; not inferred from token rows' if channel != 'unknown' else 'unclassified',
         'tokens': counts, 'total_tokens': sum(counts.values()), 'retained_rows': retained_rows,
         'amount': sum(entry['amount'] for entry in entries) if complete else None,
-        'unit': {'api': 'USD', 'purchased_credits': 'Credits'}.get(channel),
+        'unit': {'api': 'USD', 'purchased_credits': 'Credits', 'chatgpt_subscription': 'USD_API_equivalent'}.get(channel),
         'amount_complete': complete, 'by_model_and_requested_tier': entries,
         'limitations': TABLE['limitations'], 'official_sources': TABLE['sources'],
     }

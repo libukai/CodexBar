@@ -4,31 +4,35 @@ import Testing
 
 @Suite(.serialized)
 struct CostUsageCodexSessionTierTests {
-    @Test
-    func `subscription presentation exposes tokens without an API monetary total`() {
-        let config = CodexProviderDescriptor.descriptor.tokenCost
-        #expect(config.presentation == .tokensOnly)
-        #expect(config.menuHintLines == [.localized("codex_subscription_channel_hint")])
-    }
-
     @Test(arguments: ["legacy", "ledger", "bare"])
     func `session log priority tier prices the turn at the fast rate`(usageKind: String) throws {
         let standard = try Self.cost(serviceTier: "default", usageKind: usageKind)
         let priority = try Self.cost(serviceTier: "priority", usageKind: usageKind)
-        #expect(abs(priority - standard * 2) < 1e-9)
+        #expect(abs(priority - standard * 2.5) < 1e-9)
     }
 
     @Test(arguments: ["legacy", "ledger", "bare"])
-    func `ultrafast API estimate uses sixfold pricing without claiming subscription spend`(usageKind: String) throws {
+    func `ultrafast uses the local eightfold subscription equivalent`(usageKind: String) throws {
         for model in ["gpt-6.1-sol", "gpt-6-astra"] {
             let standard = try Self.cost(serviceTier: "default", usageKind: usageKind, model: model)
             let ultrafast = try Self.cost(serviceTier: "ultrafast", usageKind: usageKind, model: model)
-            #expect(abs(ultrafast - standard * 6) < 1e-9)
+            #expect(abs(ultrafast - standard * 8) < 1e-9)
             let priority = try Self.cost(serviceTier: "priority", usageKind: usageKind, model: model)
             let fast = try Self.cost(serviceTier: "fast", usageKind: usageKind, model: model)
-            #expect(abs(priority - standard * 2) < 1e-9)
+            #expect(abs(priority - standard * 2.5) < 1e-9)
             #expect(abs(fast - priority) < 1e-9)
         }
+    }
+
+    @Test(arguments: ["standard", "priority", "ultrafast"])
+    func `subscription API equivalent uses flat cache rates above 272K`(tier: String) throws {
+        let multiplier: Double = tier == "ultrafast" ? 8 : (tier == "priority" ? 2.5 : 1)
+        let row = CostUsageScanner.CodexUsageRow(
+            day: "2026-10-14", model: "gpt-6.1-sol", turnID: nil, eventIndex: nil,
+            input: 1_000_000, cached: 1_000_000, output: 0, pricingMode: tier)
+        let cost = try #require(CostUsageScanner.codexResolvedCostUSD(
+            for: row, modelsDevCatalog: nil, modelsDevCacheRoot: nil))
+        #expect(abs(cost - 0.1 * multiplier) < 1e-9)
     }
 
     @Test
@@ -70,7 +74,7 @@ struct CostUsageCodexSessionTierTests {
         try handle.close()
         let resumed = CostUsageScanner.loadDailyReport(
             provider: .codex, since: day, until: day, now: day.addingTimeInterval(1), options: options)
-        #expect(try abs(#require(resumed.summary?.totalCostUSD) - 3.5) < 1e-9)
+        #expect(try abs(#require(resumed.summary?.totalCostUSD) - 4.5) < 1e-9)
         let restored = CostUsageStore(cacheRoot: env.cacheRoot).syncLoadCodexCache(calendar: .current)
         #expect(restored.files[file.path]?.codexRows?.map(\.pricingMode) == ["ultrafast", "standard"])
     }
@@ -205,7 +209,7 @@ struct CostUsageCodexSessionTierTests {
         let rows = try #require(reopened.files[file.path]?.codexRows)
         #expect(rows.map(\.pricingMode) == ["priority", "priority", "standard", "standard", "standard"])
         #expect(resumed.summary?.totalTokens == 1_050_000)
-        #expect(try abs(#require(resumed.summary?.totalCostUSD) - 4.55) < 1e-9)
+        #expect(try abs(#require(resumed.summary?.totalCostUSD) - 5.2) < 1e-9)
         options.cacheRoot = env.root.appendingPathComponent("fresh-cache")
         let fresh = CostUsageScanner.loadDailyReport(
             provider: .codex, since: day, until: day, now: day.addingTimeInterval(1), options: options)

@@ -19,12 +19,12 @@ class OfficialPricingTests(unittest.TestCase):
         self.assertEqual(self.row('api')['unit'], 'USD')
         self.assertEqual(self.row('purchased_credits')['unit'], 'Credits')
 
-    def test_subscription_does_not_invent_money_or_reference_units(self):
+    def test_subscription_has_one_api_equivalent_total_not_a_separate_reference_index(self):
         value = self.row('chatgpt_subscription')
-        self.assertIsNone(value['amount'])
-        self.assertIsNone(value['unit'])
+        self.assertEqual(value['amount'], Decimal('0.8'))
+        self.assertEqual(value['unit'], 'USD_API_equivalent')
         self.assertNotIn('included_reference_units', value)
-        self.assertEqual(value['status'], 'no_published_per_token_monetary_price')
+        self.assertEqual(value['status'], 'subscription_api_equivalent_not_invoice')
 
     def test_missing_channel_or_tier_does_not_assume_a_price(self):
         self.assertIsNone(pricing.calculate({'model': 'gpt-6.1-sol', 'input': 100})['amount'])
@@ -53,7 +53,7 @@ class OfficialPricingTests(unittest.TestCase):
         self.assertFalse(result['amount_complete'])
         self.assertIsNone(result['amount'])
         subscription = pricing.build_report(rows, '2026-10-14', 'chatgpt_subscription')
-        self.assertIsNone(subscription['amount'])
+        self.assertIsNone(subscription['amount'])  # Unknown model keeps the total partial.
         self.assertEqual(subscription['total_tokens'], result['total_tokens'])
 
 

@@ -275,12 +275,11 @@ extension UsageStore {
             return nil
         }
 
-        let tokensOnly = ProviderDescriptorRegistry.descriptor(for: provider).tokenCost.presentation == .tokensOnly
         let dailyUsage = tokenSnapshot?.daily.map { entry in
             WidgetSnapshot.DailyUsagePoint(
                 dayKey: entry.date,
                 totalTokens: entry.totalTokens,
-                costUSD: tokensOnly ? nil : entry.costUSD)
+                costUSD: entry.costUSD)
         } ?? []
 
         let tokenUsage = Self.widgetTokenUsageSummary(from: tokenSnapshot, provider: provider)
@@ -419,16 +418,15 @@ extension UsageStore {
         }
         let defaultMonthLabel = snapshot.historyDays == 1 ? "Today" : "\(snapshot.historyDays)d"
         let monthLabel = snapshot.historyLabel ?? defaultMonthLabel
-        let tokensOnly = ProviderDescriptorRegistry.descriptor(for: provider).tokenCost.presentation == .tokensOnly
-        let channelSuffix = provider == .codex ? " · ChatGPT subscription" : ""
+        let estimateSuffix = provider == .codex ? " API est. · not billed" : ""
         return WidgetSnapshot.TokenUsageSummary(
-            sessionCostUSD: tokensOnly ? nil : snapshot.sessionCostUSD,
+            sessionCostUSD: snapshot.sessionCostUSD,
             sessionTokens: snapshot.sessionTokens,
-            last30DaysCostUSD: tokensOnly ? nil : snapshot.last30DaysCostUSD,
+            last30DaysCostUSD: snapshot.last30DaysCostUSD,
             last30DaysTokens: snapshot.last30DaysTokens ?? fallbackTokens,
             currencyCode: snapshot.currencyCode,
-            sessionLabel: sessionLabel + channelSuffix,
-            last30DaysLabel: monthLabel + channelSuffix,
+            sessionLabel: sessionLabel + estimateSuffix,
+            last30DaysLabel: monthLabel + estimateSuffix,
             updatedAt: snapshot.updatedAt)
     }
 

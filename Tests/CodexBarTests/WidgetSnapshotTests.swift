@@ -59,10 +59,7 @@ struct WidgetSnapshotTests {
     }
 
     @Test(arguments: [1, 30], [nil, "Custom"] as [String?])
-    func `Codex widget labels identify subscriptions without currency estimates`(
-        historyDays: Int,
-        historyLabel: String?)
-    {
+    func `Codex widget labels disclose API estimates`(historyDays: Int, historyLabel: String?) {
         let snapshot = CostUsageTokenSnapshot(
             sessionTokens: 1200,
             sessionCostUSD: 1.25,
@@ -75,13 +72,10 @@ struct WidgetSnapshotTests {
 
         let codex = UsageStore.widgetTokenUsageSummary(from: snapshot, provider: .codex)
         let claude = UsageStore.widgetTokenUsageSummary(from: snapshot, provider: .claude)
-        #expect(codex?.sessionCostUSD == nil)
-        #expect(codex?.last30DaysCostUSD == nil)
-        #expect(codex?.sessionTokens == 1200)
 
-        #expect(codex?.sessionLabel == "Today · ChatGPT subscription")
+        #expect(codex?.sessionLabel == "Today API est. · not billed")
         let period = historyLabel ?? (historyDays == 1 ? "Today" : "30d")
-        #expect(codex?.last30DaysLabel == "\(period) · ChatGPT subscription")
+        #expect(codex?.last30DaysLabel == "\(period) API est. · not billed")
         #expect(claude?.sessionLabel == "Today")
         #expect(claude?.last30DaysLabel == period)
         for provider in [UsageProvider.bedrock, .mistral] {

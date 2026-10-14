@@ -23,6 +23,8 @@ extension CostUsageScanner {
             ?? row.model
         let overlay = customPricing ?? .empty
         let pricingDate = row.timestampUnixMs.map { Date(timeIntervalSince1970: Double($0) / 1000) }
+        // This personal fork displays the user's subscription consumption in API-price-equivalent USD.
+        // Keep standard API token weights, apply subscription speed weights, and omit API context surcharges.
         let baseCost = CostUsagePricing.codexCostUSD(
             model: pricedModel,
             inputTokens: row.input,
@@ -32,25 +34,10 @@ extension CostUsageScanner {
             modelsDevCatalog: modelsDevCatalog,
             modelsDevCacheRoot: modelsDevCacheRoot,
             customPricing: overlay,
-            pricingResolver: pricingResolver)
-        if row.pricingMode == "ultrafast",
-           let multiplier = CostUsagePricing.codexAPIUltrafastMultiplier(model: pricedModel)
-        {
-            return baseCost.map { $0 * multiplier }
-        }
-        guard isPriority else { return baseCost }
-        guard let priorityCost = CostUsagePricing.codexPriorityCostUSD(
-            model: pricedModel,
-            inputTokens: row.input,
-            cachedInputTokens: row.cached,
-            outputTokens: row.output,
-            pricingDate: pricingDate,
-            modelsDevCatalog: modelsDevCatalog,
-            modelsDevCacheRoot: modelsDevCacheRoot,
-            customPricing: overlay,
-            pricingResolver: pricingResolver)
-        else { return baseCost }
-        return max(priorityCost, baseCost ?? priorityCost)
+            pricingResolver: pricingResolver,
+            applyLongContextRates: false)
+        let multiplier: Double = row.pricingMode == "ultrafast" ? 8 : (isPriority ? 2.5 : 1)
+        return baseCost.map { $0 * multiplier }
     }
 
     static func codexResolvedCostNanos(
