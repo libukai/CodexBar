@@ -222,33 +222,45 @@ let package = Package(
                 ]),
         ])
 
-        targets.append(.testTarget(
-            name: "CodexBarTests",
-            dependencies: [
-                "CodexBar", "CodexBarCore", "CodexBarCLI", "CodexBarCostStoreCrashProbe", "CodexBarWidget",
-                .product(name: "Sparkle", package: "Sparkle"),
-            ],
-            path: "Tests",
-            exclude: [
-                "AdaptiveReplayCLITests",
-                "AdaptiveReplayKitTests",
-                "CodexBarTests/ProviderPluginDetailsParityTests.swift",
-                "CodexBarTests/ProviderPluginExtensionParityTests.swift",
-                "CodexBarTests/ProviderPluginParityTests.swift",
-                "CodexBarTests/ProviderPluginRuntimeTests.swift",
-                "CodexBarTests/Sub2APIPluginGoldenTests.swift",
-            ],
-            resources: [
-                .copy("CodexBarTests/Fixtures"),
-            ],
-            swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
-                .enableExperimentalFeature("SwiftTesting"),
-            ],
-            linkerSettings: [
-                // XCTest's executable is three directories below its sibling framework products.
-                .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@loader_path/../../.."]),
-            ]))
+        if ProcessInfo.processInfo.environment["CODEXBAR_LOCAL_PRICING_TESTS"] == "1" {
+            targets.removeAll { $0.type == .test }
+            targets.append(.testTarget(
+                name: "CodexBarLocalPricingTests",
+                dependencies: ["CodexBarCore"],
+                path: "local-patch/Tests",
+                swiftSettings: [.unsafeFlags([
+                    "-load-plugin-library",
+                    "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing/libTestingMacros.dylib",
+                ])]))
+        } else {
+            targets.append(.testTarget(
+                name: "CodexBarTests",
+                dependencies: [
+                    "CodexBar", "CodexBarCore", "CodexBarCLI", "CodexBarCostStoreCrashProbe", "CodexBarWidget",
+                    .product(name: "Sparkle", package: "Sparkle"),
+                ],
+                path: "Tests",
+                exclude: [
+                    "AdaptiveReplayCLITests",
+                    "AdaptiveReplayKitTests",
+                    "CodexBarTests/ProviderPluginDetailsParityTests.swift",
+                    "CodexBarTests/ProviderPluginExtensionParityTests.swift",
+                    "CodexBarTests/ProviderPluginParityTests.swift",
+                    "CodexBarTests/ProviderPluginRuntimeTests.swift",
+                    "CodexBarTests/Sub2APIPluginGoldenTests.swift",
+                ],
+                resources: [
+                    .copy("CodexBarTests/Fixtures"),
+                ],
+                swiftSettings: [
+                    .enableUpcomingFeature("StrictConcurrency"),
+                    .enableExperimentalFeature("SwiftTesting"),
+                ],
+                linkerSettings: [
+                    // XCTest's executable is three directories below its sibling framework products.
+                    .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@loader_path/../../.."]),
+                ]))
+        }
         #endif
 
         return targets

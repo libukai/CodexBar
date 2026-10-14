@@ -98,8 +98,8 @@ source "$ROOT/Scripts/package_product_paths.sh"
 source "$ROOT/Scripts/sparkle_signing_paths.sh"
 
 # SwiftBuild can record the deployment target as the SDK, enabling legacy native UI.
-CODEXBAR_MACOS_SDK_PATH=$(xcrun --sdk macosx --show-sdk-path)
-SDK_VERSION=$(xcrun --sdk macosx --show-sdk-version)
+CODEXBAR_MACOS_SDK_PATH=${CODEXBAR_MACOS_SDK_PATH:-$(xcrun --sdk macosx --show-sdk-path)}
+SDK_VERSION=$(xcrun --sdk "$CODEXBAR_MACOS_SDK_PATH" --show-sdk-version)
 BUILD_ARGS=(--sdk "$CODEXBAR_MACOS_SDK_PATH"
   -Xlinker -platform_version -Xlinker macos -Xlinker 14.0 -Xlinker "$SDK_VERSION")
 
@@ -549,11 +549,27 @@ build_widget_extension() {
 
 install_widget_extension() {
   local src_appex
-  src_appex="$(build_widget_extension)"
+  # Local-only packaging can retain the installed, unchanged widget when full Xcode is unavailable.
+  if [[ -n "${CODEXBAR_EXISTING_WIDGET_EXTENSION:-}" ]]; then
+    src_appex="$CODEXBAR_EXISTING_WIDGET_EXTENSION"
+    if [[ ! -f "$src_appex/Contents/MacOS/CodexBarWidget" ]]; then
+      echo "ERROR: Invalid existing widget extension: $src_appex" >&2
+      return 1
+    fi
+  else
+    src_appex="$(build_widget_extension)"
+  fi
   local widget_app="$APP/Contents/PlugIns/CodexBarWidget.appex"
   rm -rf "$widget_app"
   mkdir -p "$APP/Contents/PlugIns"
   cp -R "$src_appex" "$widget_app"
+  if [[ -n "${CODEXBAR_EXISTING_WIDGET_EXTENSION:-}" && ${#ARCH_LIST[@]} -eq 1 ]]; then
+    local widget_binary="$widget_app/Contents/MacOS/CodexBarWidget"
+    if [[ "$(lipo -archs "$widget_binary")" != "${ARCH_LIST[0]}" ]]; then
+      lipo "$widget_binary" -thin "${ARCH_LIST[0]}" -output "${widget_binary}.thin"
+      mv "${widget_binary}.thin" "$widget_binary"
+    fi
+  fi
   verify_binary_arches "$widget_app/Contents/MacOS/CodexBarWidget" "${ARCH_LIST[@]}"
 }
 

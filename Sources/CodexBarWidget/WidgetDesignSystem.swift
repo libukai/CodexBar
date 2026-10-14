@@ -1,3 +1,4 @@
+// swiftformat:disable environmentEntry
 import CodexBarCore
 import Foundation
 import SwiftUI
@@ -61,15 +62,24 @@ func W(_ key: String, _ arguments: CVarArg...) -> String {
 
 extension EnvironmentValues {
     /// Mirrors the app's "show used instead of remaining" preference into the tiles.
-    @Entry var widgetUsageShowsUsed: Bool = false
+    var widgetUsageShowsUsed: Bool {
+        get { self[WidgetUsageShowsUsedKey.self] }
+        set { self[WidgetUsageShowsUsedKey.self] = newValue }
+    }
 
     /// Snapshot-rendering seam. WidgetKit owns `widgetRenderingMode` and nothing outside a widget
     /// host can set it, so the tinted and clear appearances are unreachable from a preview without
     /// this. Always nil in the shipping widget.
-    @Entry var widgetRenderingModeOverride: WidgetRenderingMode?
+    var widgetRenderingModeOverride: WidgetRenderingMode? {
+        get { self[WidgetRenderingModeOverrideKey.self] }
+        set { self[WidgetRenderingModeOverrideKey.self] = newValue }
+    }
 
     /// Native previews keep selection local instead of writing shared widget preferences.
-    @Entry var widgetProviderSelectionOverride: ((UsageProvider) -> Void)?
+    var widgetProviderSelectionOverride: ((UsageProvider) -> Void)? {
+        get { self[WidgetProviderSelectionOverrideKey.self] }
+        set { self[WidgetProviderSelectionOverrideKey.self] = newValue }
+    }
 }
 
 // MARK: - Layout metrics
@@ -566,5 +576,23 @@ struct WidgetEmptyState: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}
+
+private struct WidgetUsageShowsUsedKey: EnvironmentKey {
+    static var defaultValue: Bool {
+        false
+    }
+}
+
+private struct WidgetRenderingModeOverrideKey: EnvironmentKey {
+    static var defaultValue: WidgetRenderingMode? {
+        nil
+    }
+}
+
+private struct WidgetProviderSelectionOverrideKey: EnvironmentKey {
+    static var defaultValue: ((UsageProvider) -> Void)? {
+        nil
     }
 }

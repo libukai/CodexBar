@@ -1,0 +1,14 @@
+#!/bin/bash
+set -euo pipefail
+real_swift=/Library/Developer/CommandLineTools/usr/bin/swift
+if [[ "${1:-}" == build || "${1:-}" == test ]]; then
+  command_name="$1"
+  shift
+  for argument in "$@"; do
+    if [[ "$argument" == --sdk || "$argument" == --sdk=* ]]; then
+      exec "$real_swift" "$command_name" "$@"
+    fi
+  done
+  exec "$real_swift" "$command_name" --sdk /Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk "$@"
+fi
+exec "$real_swift" "$@"
