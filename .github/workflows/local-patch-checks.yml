@@ -1,0 +1,31 @@
+name: Local patch checks
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: local-patch-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pricing:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Show toolchain
+        run: |
+          xcode-select -p
+          swift --version
+      - name: Verify parser fingerprint
+        run: ./Scripts/regenerate-codex-parser-hash.sh --check
+      - name: Run offline speed-tier pricing tests
+        shell: bash
+        run: |
+          source Scripts/test_environment.sh
+          swift test --filter CostUsageCodexSessionTierTests

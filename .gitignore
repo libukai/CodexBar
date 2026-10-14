@@ -45,3 +45,8 @@ docs/.astro/
 # Swift Package Manager metadata (leave sources tracked)
 # Packages/
 # Package.resolved
+
+# Personal installation state and generated patch exports
+/local-patch/install-state.json
+/local-patch/*.patch
+/local-patch/reports/

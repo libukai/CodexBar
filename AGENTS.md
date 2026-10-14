@@ -52,3 +52,11 @@
 - Keep provider data siloed: when rendering usage or account info for a provider (Claude vs Codex), never display identity/plan fields sourced from a different provider.
 - Claude CLI status line is custom + user-configurable; never rely on it for usage parsing by default. A user-enabled, opt-in statusLine JSON feed is permitted as an explicit data source (owner ruling, #2733): it must be off by default, clearly labeled as sourced from the user's own statusLine config, and fail soft when the format drifts.
 - Cookie imports: default Chrome-only when possible to avoid other browser prompts; override via browser list when needed.
+
+## Personal fork maintenance
+- Before GitHub, upstream-sync, or local-package work, read `local-patch/MAINTAINING.md`.
+- `origin` is `libukai/CodexBar`; `upstream` is `steipete/CodexBar` and is read-only.
+- Keep `main` an upstream mirror and keep personal changes on `codex/ultrafast-cost-pricing`.
+- Ultrafast x8 is the user's local subscription-equivalent policy; do not silently replace it with API x6.
+- Keep installation state, usage reports, generated patch exports, app bundles and credentials out of commits.
+- A successful push or upstream fetch is not proof that a rebuilt app has been installed; report source and installed states separately.
