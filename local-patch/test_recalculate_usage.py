@@ -9,43 +9,52 @@ spec.loader.exec_module(pricing)
 
 
 class OfficialPricingTests(unittest.TestCase):
-    def row(self, tier, input_tokens=1000000, cached=1000000, output=0):
+    def row(self, channel, tier='ultrafast', input_tokens=1000000, cached=1000000, output=0):
         return pricing.calculate({'model': 'gpt-6.1-sol', 'pricingMode': tier,
-                                  'input': input_tokens, 'cached': cached, 'output': output})
+                                  'input': input_tokens, 'cached': cached, 'output': output}, channel)
 
-    def test_api_cache_uses_long_context_and_sixfold_ultrafast(self):
-        self.assertEqual(sum(self.row('ultrafast')['api_usd']), Decimal('1.2'))
+    def test_api_and_purchased_credits_have_their_own_units_and_prices(self):
+        self.assertEqual(self.row('api')['amount'], Decimal('1.2'))
+        self.assertEqual(self.row('purchased_credits')['amount'], Decimal('15'))
+        self.assertEqual(self.row('api')['unit'], 'USD')
+        self.assertEqual(self.row('purchased_credits')['unit'], 'Credits')
 
-    def test_included_reference_uses_flat_cache_and_eightfold_weight(self):
-        self.assertEqual(sum(self.row('ultrafast')['included_reference_units']), Decimal('20'))
+    def test_subscription_does_not_invent_money_or_reference_units(self):
+        value = self.row('chatgpt_subscription')
+        self.assertIsNone(value['amount'])
+        self.assertIsNone(value['unit'])
+        self.assertNotIn('included_reference_units', value)
+        self.assertEqual(value['status'], 'no_published_per_token_monetary_price')
 
-    def test_purchased_credits_use_sixfold_weight(self):
-        self.assertEqual(sum(self.row('ultrafast')['purchased_credits']), Decimal('15'))
+    def test_missing_channel_or_tier_does_not_assume_a_price(self):
+        self.assertIsNone(pricing.calculate({'model': 'gpt-6.1-sol', 'input': 100})['amount'])
+        self.assertIsNone(pricing.calculate({'model': 'gpt-6.1-sol', 'input': 100}, 'api')['amount'])
+        self.assertIsNone(self.row('api', 'unrecognized')['amount'])
 
-    def test_fast_policies_are_separate(self):
-        value = self.row('priority')
-        self.assertEqual(sum(value['included_reference_units']), Decimal('6.25'))
-        self.assertEqual(sum(value['purchased_credits']), Decimal('5'))
+    def test_credits_do_not_jump_at_context_boundary(self):
+        low = self.row('purchased_credits', input_tokens=272000, cached=272000)
+        high = self.row('purchased_credits', input_tokens=272001, cached=272001)
+        self.assertEqual(high['amount'] / low['amount'], Decimal(272001) / Decimal(272000))
+        self.assertGreater(self.row('api', input_tokens=272001, cached=272001)['amount'] /
+                           self.row('api', input_tokens=272000, cached=272000)['amount'], Decimal(2))
 
-    def test_subscription_rate_does_not_jump_at_context_boundary(self):
-        low = self.row('ultrafast', 272000, 272000)
-        high = self.row('ultrafast', 272001, 272001)
-        self.assertEqual(high['included_reference_units'][1] / low['included_reference_units'][1],
-                         Decimal(272001) / Decimal(272000))
-        self.assertGreater(high['api_usd'][1] / low['api_usd'][1], Decimal(2))
+    def test_cache_subset_and_reasoning_not_counted_twice(self):
+        value = pricing.calculate({'model': 'gpt-6.1-sol', 'input': 100, 'cached': 80,
+                                   'output': 10, 'reasoning': 7, 'pricingMode': 'standard'}, 'purchased_credits')
+        self.assertEqual(value['tokens'], {'uncached_input': 20, 'cached_input': 80, 'output': 10})
+        self.assertEqual(value['amount'], Decimal('0.0037'))
 
-    def test_cache_is_subset_and_reasoning_is_not_charged_twice(self):
-        row = {'model': 'gpt-6.1-sol', 'input': 100, 'cached': 80, 'output': 10,
-               'reasoning': 7, 'pricingMode': 'standard'}
-        value = pricing.calculate(row)
-        self.assertEqual(value['tokens'], [20, 80, 10])
-        self.assertEqual(sum(value['purchased_credits']), Decimal('0.0037'))
-
-    def test_unknown_model_or_tier_does_not_invent_a_price(self):
-        value = pricing.calculate({'model': 'unknown', 'pricingMode': 'ultrafast', 'input': 100})
-        self.assertIsNone(value['api_usd'])
-        self.assertIsNone(value['included_reference_units'])
-        self.assertIsNone(self.row('unrecognized')['purchased_credits'])
+    def test_report_groups_model_speed_and_never_sums_incomplete_money(self):
+        rows = [{'day': '2026-10-14', 'model': model, 'pricingMode': tier, 'input': 100, 'output': 10}
+                for model, tier in [('gpt-6.1-sol', 'standard'), ('unknown', 'ultrafast')]]
+        result = pricing.build_report(rows, '2026-10-14', 'api')
+        self.assertEqual(result['total_tokens'], 220)
+        self.assertEqual(len(result['by_model_and_requested_tier']), 2)
+        self.assertFalse(result['amount_complete'])
+        self.assertIsNone(result['amount'])
+        subscription = pricing.build_report(rows, '2026-10-14', 'chatgpt_subscription')
+        self.assertIsNone(subscription['amount'])
+        self.assertEqual(subscription['total_tokens'], result['total_tokens'])
 
 
 if __name__ == '__main__':

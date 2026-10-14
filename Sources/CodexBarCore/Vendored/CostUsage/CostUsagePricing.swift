@@ -190,7 +190,7 @@ enum CostUsagePricing {
     static func codexBuiltInPricingFingerprint() -> String {
         var parts = [
             "priorityInputTokenLimit=\(self.codexPriorityInputTokenLimit)",
-            "fastPricingDefinition=local-subscription-ultrafast8-v1",
+            "fastPricingDefinition=api-ultrafast6-v2",
         ]
         for model in self.codex.keys.sorted() {
             guard let pricing = self.codex[model] else { continue }
@@ -668,10 +668,10 @@ enum CostUsagePricing {
         }
     }
 
-    /// Local subscription-usage equivalent requested by the user; this is not an API bill.
-    static func codexSubscriptionUltrafastMultiplier(model: String) -> Double? {
+    /// Public API multiplier only; subscription allowance is not a USD amount.
+    static func codexAPIUltrafastMultiplier(model: String) -> Double? {
         switch self.normalizeCodexModel(model) {
-        case "gpt-6-astra", "gpt-6.1-sol": 8
+        case "gpt-6-astra", "gpt-6.1-sol": 6
         default: nil
         }
     }

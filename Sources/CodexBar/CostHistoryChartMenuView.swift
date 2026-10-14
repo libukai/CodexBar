@@ -516,7 +516,9 @@ struct CostHistoryChartMenuView: View {
                     .lineLimit(1)
             }
             Spacer(minLength: 8)
-            Text(session.costUSD.map(self.costString) ?? "—")
+            Text(ProviderDescriptorRegistry.descriptor(for: self.provider).tokenCost.presentation == .tokensOnly
+                ? session.totalTokens.map(UsageFormatter.tokenCountString) ?? "—"
+                : session.costUSD.map(self.costString) ?? "—")
                 .font(.caption)
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
@@ -875,6 +877,9 @@ struct CostHistoryChartMenuView: View {
     }
 
     private func projectSummary(_ project: CostUsageProjectBreakdown) -> String {
+        if ProviderDescriptorRegistry.descriptor(for: self.provider).tokenCost.presentation == .tokensOnly {
+            return project.totalTokens.map { L("%@ tokens", UsageFormatter.tokenCountString($0)) } ?? "—"
+        }
         let cost = project.totalCostUSD
             .map { self.costString($0) } ?? "—"
         guard let totalTokens = project.totalTokens else { return cost }
@@ -937,6 +942,9 @@ struct CostHistoryChartMenuView: View {
     }
 
     private func projectSourceSummary(_ source: CostUsageProjectSourceBreakdown) -> String {
+        if ProviderDescriptorRegistry.descriptor(for: self.provider).tokenCost.presentation == .tokensOnly {
+            return source.totalTokens.map { L("%@ tokens", UsageFormatter.tokenCountString($0)) } ?? "—"
+        }
         let cost = source.totalCostUSD
             .map { self.costString($0) } ?? "—"
         guard let totalTokens = source.totalTokens else { return cost }
@@ -952,7 +960,9 @@ struct CostHistoryChartMenuView: View {
 
         let dayLabel = point.date.formatted(.dateTime.month(.abbreviated).day())
         var parts: [String] = []
-        if let cost = point.costUSD {
+        if ProviderDescriptorRegistry.descriptor(for: self.provider).tokenCost.presentation != .tokensOnly,
+           let cost = point.costUSD
+        {
             parts.append(self.costString(cost))
         }
         if let tokens = point.totalTokens {
@@ -1026,7 +1036,8 @@ struct CostHistoryChartMenuView: View {
     private func modelBreakdownTotalSubtitle(_ item: CostUsageDailyReport.ModelBreakdown) -> String? {
         let detail = UsageFormatter.modelCostDetail(
             item.modelName,
-            costUSD: item.costUSD.map { $0 * self.costMultiplier },
+            costUSD: ProviderDescriptorRegistry.descriptor(for: self.provider).tokenCost.presentation == .tokensOnly
+                ? nil : item.costUSD.map { $0 * self.costMultiplier },
             totalTokens: item.totalTokens,
             currencyCode: self.currencyCode)
         guard (item.incompleteRequestCount ?? 0) > 0 else { return detail }
@@ -1034,6 +1045,9 @@ struct CostHistoryChartMenuView: View {
     }
 
     private func modelBreakdownModeSubtitle(_ item: CostUsageDailyReport.ModelBreakdown) -> String? {
+        // Historical premium buckets combine Fast and Ultrafast; avoid claiming an exact speed here.
+        guard ProviderDescriptorRegistry.descriptor(for: self.provider).tokenCost.presentation != .tokensOnly
+        else { return nil }
         let parts = [
             (L("Std"), item.standardCostUSD, item.standardTokens),
             (L("Fast"), item.priorityCostUSD, item.priorityTokens),

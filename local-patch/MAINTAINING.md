@@ -44,7 +44,7 @@ git switch codex/ultrafast-cost-pricing
 每次检查这些补丁是否仍需要保留：
 
 1. 上游是否已经正确解析 `ultrafast`，并在增量扫描、SQLite 恢复和模式切换时保留档位。
-2. 个人政策仍是 Sol/Astra 的 Ultrafast 按 **8 倍订阅用量折算**。它不是 API 的 6 倍价格，也不是账户实际扣费或实测速率。
+2. 保留真实 Token 和请求档位；订阅页面不显示 API 金额或自定义参考用量。订阅 8 倍是额度规则，API 6 倍才用于独立的 API 估算。
 3. 缓存版本、计价指纹和解析器哈希要与最终代码一致。使用上游生成脚本更新哈希。
 4. 继续保留长上下文、缓存 Token、分叉/子任务去重和压缩用量的上游修复。
 5. 当完整 Xcode 可用时，可逐步去掉 Command Line Tools 的兼容层；不要提前删除仍在使用的重编译入口。
@@ -92,32 +92,22 @@ Codex 的速度说明由模型元数据提供，修改模型缓存后可用 `rea
 
 应用包、构建目录、安装路径、PID、个人 Token/金额统计、登录数据、私钥和令牌不提交。编译出的本地签名版关闭自动更新且没有上游 CloudKit 权限，原版备份保持可恢复。
 
-## 2026-10-14 复算与下一次界面调整
+## 2026-10-14 按渠道统计
 
-新增 `recalculate-usage.py` 和带官方来源的 `official-pricing.json`，将同一批缓存记录拆成三个独立结果：
+用户最终要求：真实 Token、消费渠道、该渠道有依据的金额；不需要参考用量。
 
-- API 价格估算：美元，适用 API 长上下文价阶和 API Fast/Ultrafast 倍率。
-- 额外 Credits 条件估算：Credits，缓存、输入和输出使用发布的 Credits 单价，Fast 2 倍、Ultrafast 6 倍，不使用 API 长上下文价阶。
-- 套餐参考用量：基于发布的 Credits 权重和套餐速度倍率（1/2.5/8）形成的参考指数，不表示官方实际额度扣减、真实 Credits 消耗或美元账单。不使用 API 长上下文价阶。
-
-计算命令：
+- Codex 菜单及图表按已确认的 ChatGPT 订阅配置显示 Token，隐藏 API 估算金额。渠道依据是用户确认，不能据此推断每条日志的历史计费池。
+- 本机 Token 分成非缓存输入、缓存输入和输出；缓存是总输入的子集，推理是输出的子集，不重复相加。速度倍率不乘到真实 Token 数量上。
+- 订阅套餐没有公开逐 Token 的货币价格，金额为空。不能把 API 美元、Credits 余额变化或自行定义的指数当成实际支出。
+- 独立 CLI 的 `costUSD` 仍明确是 API 估算，Ultrafast 使用 API 6 倍；它不是订阅费用。计价指纹更新后重算缓存。
+- 复算工具只对明确选择的一个渠道计价，不同时输出三套假设账单。未指定渠道默认 unknown；未知模型/速度不编造单价，部分已知金额不伪装成完整总金额。
 
 ```bash
 python3 local-patch/recalculate-usage.py --date YYYY-MM-DD \
-  --output local-patch/reports/recalculated-usage-YYYY-MM-DD.json
+  --channel chatgpt_subscription --output local-patch/reports/usage-YYYY-MM-DD.json
 python3 -m unittest discover -s local-patch -p 'test_recalculate_usage.py'
 ```
 
-冻结同一份数据库快照再计算，避免在活跃对话期间混用不同时间的总值。缓存 Token 从总输入中扣除，推理 Token 不在输出之外重复计费；不发明缺失模型、未知速度或历史日期的计价规则。报告是被 Git 忽略的个人数据。
+只有明确核实为 API 或购买 Credits 的记录，才分别选择 `--channel api` 或 `--channel purchased_credits`。它们按公开价格计算，仍需区分计算金额和服务商实际账单；不能对混合历史一概套用当前认证或当前配置。
 
-当前已安装的 v0.74.1-libukai.1 仍采用旧的混合金额算法。这个复算工具不等于已经重编译、安装或更新了菜单。下一轮应用改动需要：
-
-1. 让 `costUSD` 只保存 API 价格估算；Ultrafast API 使用 6 倍。
-2. 引入独立的订阅参考字段与单位，Fast 使用 2.5 倍、Ultrafast 使用 8 倍，且不使用 API 的 272K 加价。
-3. 不把参考指数标成实际 Credits 扣减或套餐实际剩余量。优先显示官方额度快照。
-4. 套餐、额外 Credits、API 三种计算结果不合并为一个总值；用户指定套餐模式，不从 `model_provider=openai` 猜测认证或计费池。
-5. 界面显示缓存、非缓存输入、输出的分项与明确单位；未知记录显示未分类/部分估算。
-6. 升级计价指纹，重算旧缓存，并加入超过 272K 后订阅价不变、API 价变化和模式切换的回归用例。
-7. 以官方余量与重置时间作为实际套餐状态；本地记录只覆盖被保留的本机用量。
-
-本轮复算只验证数学和拆分方法，不声称能从 Token 日志恢复官方未公布的套餐扣减公式。
+报告按模型和请求速度分类，列出渠道依据。当前扫描后的 SQLite 保留记录需要与原生报告总 Token 对账；本机历史不涵盖其他设备。报告和安装状态不提交。

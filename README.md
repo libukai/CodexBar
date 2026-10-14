@@ -1,4 +1,4 @@
-> **libukai 个人维护分支**：在上游 v0.74.1 基础上维护 Ultrafast 订阅用量 8 倍折算和本地 macOS 构建工具。`main` 跟踪官方上游，`codex/ultrafast-cost-pricing` 保存本地补丁。详见 [维护与升级流程](local-patch/MAINTAINING.md)。这不是官方发行版，折算值不是实际账单。
+> **libukai 个人维护分支**：在上游 v0.74.1 基础上维护 Ultrafast 档位记录、按渠道统计和本地 macOS 构建工具。`main` 跟踪官方上游，`codex/ultrafast-cost-pricing` 保存本地补丁。详见 [维护与升级流程](local-patch/MAINTAINING.md)。这不是官方发行版；订阅页面只显示真实 Token 和渠道，不把 API 估算当成订阅支出。
 
 # CodexBar 🎚️ — May your tokens never run out.
 

@@ -921,7 +921,8 @@ struct MenuBarLayoutPreview: View {
 
     func liveData(provider: UsageProvider, snapshot: UsageSnapshot) -> MenuBarLayoutRenderData {
         let now = Date()
-        let cost = self.store.tokenSnapshotForCurrentProviderConfig(for: provider)?.snapshot
+        let cost = ProviderDescriptorRegistry.descriptor(for: provider).tokenCost.presentation == .tokensOnly
+            ? nil : self.store.tokenSnapshotForCurrentProviderConfig(for: provider)?.snapshot
         let costToday = MenuBarLayoutCostResolver.todayCostUSD(snapshot: cost, now: now)
         // Thresholds are USD, and `convertedCost` returns the source amount unchanged when no rate
         // exists, so keep the datum only when the conversion actually landed in USD.

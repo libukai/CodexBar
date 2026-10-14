@@ -34,7 +34,7 @@ extension CostUsageScanner {
             customPricing: overlay,
             pricingResolver: pricingResolver)
         if row.pricingMode == "ultrafast",
-           let multiplier = CostUsagePricing.codexSubscriptionUltrafastMultiplier(model: pricedModel)
+           let multiplier = CostUsagePricing.codexAPIUltrafastMultiplier(model: pricedModel)
         {
             return baseCost.map { $0 * multiplier }
         }

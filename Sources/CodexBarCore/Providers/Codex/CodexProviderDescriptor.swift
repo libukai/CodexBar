@@ -75,14 +75,15 @@ public enum CodexProviderDescriptor {
             tokenCost: ProviderTokenCostConfig(
                 supportsTokenCost: true,
                 noDataMessage: self.noDataMessage,
-                menuHintLines: [.localized("codex_api_estimate_hint")],
+                menuHintLines: [.localized("codex_subscription_channel_hint")],
                 supportsTokenSnapshot: true,
                 settingsStatusOrder: 1,
                 showsHintInProviderDetails: true,
                 historyTitleStyle: .compact,
                 hintPlacement: .beforeRequestHistory,
-                chartEstimateDisclaimer: .localized("codex_api_estimate_hint"),
-                preservesCalendarDaysInCharts: true),
+                chartEstimateDisclaimer: .localized("codex_subscription_channel_hint"),
+                preservesCalendarDaysInCharts: true,
+                presentation: .tokensOnly),
             pace: ProviderPaceCapability(
                 primary: .session(maximumMinutes: 300),
                 secondary: .weekly,

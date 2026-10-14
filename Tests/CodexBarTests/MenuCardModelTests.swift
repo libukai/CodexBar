@@ -997,7 +997,7 @@ struct MenuCardModelTests {
 
         #expect(model.tokenUsage?.monthLine.contains("456") == true)
         #expect(model.tokenUsage?.monthLine.contains("tokens") == true)
-        #expect(model.tokenUsage?.hintLine == "Subscription usage equivalent · Ultrafast at 8x")
+        #expect(model.tokenUsage?.hintLine == "Channel: ChatGPT subscription · amount cannot be calculated from token logs")
     }
 
     @Test

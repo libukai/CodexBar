@@ -2475,3 +2475,5 @@
 "Pace sign" = "사용 속도 부호";
 "Ahead of pace is +" = "기준 속도 초과는 +";
 "Reserve is +" = "여유분은 +";
+
+"codex_subscription_channel_hint" = "경로: ChatGPT 구독 · 토큰 로그로 금액을 계산할 수 없음";

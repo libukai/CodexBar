@@ -4,6 +4,13 @@ import Testing
 
 @Suite(.serialized)
 struct CostUsageCodexSessionTierTests {
+    @Test
+    func `subscription presentation exposes tokens without an API monetary total`() {
+        let config = CodexProviderDescriptor.descriptor.tokenCost
+        #expect(config.presentation == .tokensOnly)
+        #expect(config.menuHintLines == [.localized("codex_subscription_channel_hint")])
+    }
+
     @Test(arguments: ["legacy", "ledger", "bare"])
     func `session log priority tier prices the turn at the fast rate`(usageKind: String) throws {
         let standard = try Self.cost(serviceTier: "default", usageKind: usageKind)
@@ -12,11 +19,11 @@ struct CostUsageCodexSessionTierTests {
     }
 
     @Test(arguments: ["legacy", "ledger", "bare"])
-    func `ultrafast uses the local eightfold subscription equivalent`(usageKind: String) throws {
+    func `ultrafast API estimate uses sixfold pricing without claiming subscription spend`(usageKind: String) throws {
         for model in ["gpt-6.1-sol", "gpt-6-astra"] {
             let standard = try Self.cost(serviceTier: "default", usageKind: usageKind, model: model)
             let ultrafast = try Self.cost(serviceTier: "ultrafast", usageKind: usageKind, model: model)
-            #expect(abs(ultrafast - standard * 8) < 1e-9)
+            #expect(abs(ultrafast - standard * 6) < 1e-9)
             let priority = try Self.cost(serviceTier: "priority", usageKind: usageKind, model: model)
             let fast = try Self.cost(serviceTier: "fast", usageKind: usageKind, model: model)
             #expect(abs(priority - standard * 2) < 1e-9)
@@ -63,7 +70,7 @@ struct CostUsageCodexSessionTierTests {
         try handle.close()
         let resumed = CostUsageScanner.loadDailyReport(
             provider: .codex, since: day, until: day, now: day.addingTimeInterval(1), options: options)
-        #expect(try abs(#require(resumed.summary?.totalCostUSD) - 4.5) < 1e-9)
+        #expect(try abs(#require(resumed.summary?.totalCostUSD) - 3.5) < 1e-9)
         let restored = CostUsageStore(cacheRoot: env.cacheRoot).syncLoadCodexCache(calendar: .current)
         #expect(restored.files[file.path]?.codexRows?.map(\.pricingMode) == ["ultrafast", "standard"])
     }

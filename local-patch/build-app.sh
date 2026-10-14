@@ -16,7 +16,7 @@ from pathlib import Path
 import plistlib
 info = Path("CodexBar.app/Contents/Info.plist")
 data = plistlib.loads(info.read_bytes())
-data["CodexBarLocalPricingPolicy"] = "Ultrafast subscription usage equivalent x8"
+data["CodexBarLocalPricingPolicy"] = "ChatGPT subscription token history; separate API estimates only"
 info.write_bytes(plistlib.dumps(data))
 MARKER
 codesign --force --sign - CodexBar.app/Contents/Resources/Vortex_Vortex.bundle

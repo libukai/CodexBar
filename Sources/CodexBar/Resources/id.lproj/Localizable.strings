@@ -2510,3 +2510,5 @@
 "Pace sign" = "Tanda laju penggunaan";
 "Ahead of pace is +" = "Di atas laju adalah +";
 "Reserve is +" = "Cadangan adalah +";
+
+"codex_subscription_channel_hint" = "Saluran: langganan ChatGPT · biaya tidak dapat dihitung dari log token";

@@ -57,6 +57,6 @@
 - Before GitHub, upstream-sync, or local-package work, read `local-patch/MAINTAINING.md`.
 - `origin` is `libukai/CodexBar`; `upstream` is `steipete/CodexBar` and is read-only.
 - Keep `main` an upstream mirror and keep personal changes on `codex/ultrafast-cost-pricing`.
-- Ultrafast x8 is the user's local subscription-equivalent policy; do not silently replace it with API x6.
+- Current user scope: raw tokens, identified billing channel and channel-specific price only. Do not invent subscription reference units or treat API estimates as subscription spend. API estimates use API x6; included subscription x8 is an allowance multiplier, not a USD rate.
 - Keep installation state, usage reports, generated patch exports, app bundles and credentials out of commits.
 - A successful push or upstream fetch is not proof that a rebuilt app has been installed; report source and installed states separately.

@@ -2507,3 +2507,5 @@
 "Pace sign" = "ペースの符号";
 "Ahead of pace is +" = "ペース超過を + で表示";
 "Reserve is +" = "余裕を + で表示";
+
+"codex_subscription_channel_hint" = "利用経路：ChatGPT サブスクリプション · トークンログから金額は算出できません";

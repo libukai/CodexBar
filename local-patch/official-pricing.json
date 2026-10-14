@@ -6,27 +6,113 @@
     "https://developers.openai.com/api/docs/models/gpt-6.1-sol",
     "https://developers.openai.com/api/docs/models/gpt-6-astra"
   ],
-  "included_speed_weights": {"standard": "1", "priority": "2.5", "fast": "2.5", "ultrafast": "8"},
-  "purchased_credit_speed_multipliers": {"standard": "1", "priority": "2", "fast": "2", "ultrafast": "6"},
+  "purchased_credit_speed_multipliers": {
+    "standard": "1",
+    "priority": "2",
+    "fast": "2",
+    "ultrafast": "6"
+  },
   "credits_per_million": {
-    "gpt-6.1-sol": ["50", "2.5", "250"],
-    "gpt-6-astra": ["250", "25", "1250"],
-    "gpt-6-sol": ["50", "5", "250"],
-    "gpt-6-luna": ["2.5", "0.25", "12.5"],
-    "gpt-5.6-sol": ["100", "10", "500"],
-    "gpt-5.6-terra": ["50", "5", "300"],
-    "gpt-5.6-luna": ["5", "0.5", "30"]
+    "gpt-6.1-sol": [
+      "50",
+      "2.5",
+      "250"
+    ],
+    "gpt-6-astra": [
+      "250",
+      "25",
+      "1250"
+    ],
+    "gpt-6-sol": [
+      "50",
+      "5",
+      "250"
+    ],
+    "gpt-6-luna": [
+      "2.5",
+      "0.25",
+      "12.5"
+    ],
+    "gpt-5.6-sol": [
+      "100",
+      "10",
+      "500"
+    ],
+    "gpt-5.6-terra": [
+      "50",
+      "5",
+      "300"
+    ],
+    "gpt-5.6-luna": [
+      "5",
+      "0.5",
+      "30"
+    ]
   },
   "api": {
-    "gpt-6.1-sol": {"short": ["2", "0.1", "10"], "long": ["4", "0.2", "15"], "threshold": 272000, "fast": "2", "ultrafast": "6"},
-    "gpt-6-astra": {"short": ["10", "1", "50"], "long": ["20", "2", "75"], "threshold": 272000, "fast": "2", "ultrafast": "6"},
-    "gpt-6-sol": {"short": ["2", "0.2", "10"], "long": ["4", "0.4", "15"], "threshold": 272000, "fast": "2"},
-    "gpt-6-luna": {"short": ["0.1", "0.01", "0.5"], "long": ["0.2", "0.02", "0.75"], "threshold": 272000, "fast": "2"}
+    "gpt-6.1-sol": {
+      "short": [
+        "2",
+        "0.1",
+        "10"
+      ],
+      "long": [
+        "4",
+        "0.2",
+        "15"
+      ],
+      "threshold": 272000,
+      "fast": "2",
+      "ultrafast": "6"
+    },
+    "gpt-6-astra": {
+      "short": [
+        "10",
+        "1",
+        "50"
+      ],
+      "long": [
+        "20",
+        "2",
+        "75"
+      ],
+      "threshold": 272000,
+      "fast": "2",
+      "ultrafast": "6"
+    },
+    "gpt-6-sol": {
+      "short": [
+        "2",
+        "0.2",
+        "10"
+      ],
+      "long": [
+        "4",
+        "0.4",
+        "15"
+      ],
+      "threshold": 272000,
+      "fast": "2"
+    },
+    "gpt-6-luna": {
+      "short": [
+        "0.1",
+        "0.01",
+        "0.5"
+      ],
+      "long": [
+        "0.2",
+        "0.02",
+        "0.75"
+      ],
+      "threshold": 272000,
+      "fast": "2"
+    }
   },
   "limitations": [
-    "Included reference units are derived from the published credit-rate weights and included speed multipliers; they are not official quota debits or purchased credits.",
-    "Purchased Credits and API USD outputs are conditional estimates; logging into ChatGPT does not identify which allowance pool paid each request.",
-    "No 272K context uplift or cache-write charge is applied to subscription reference or purchased-credit calculations.",
-    "Historical credit prices require a date-specific rate card; this table is a current reference, not a verified historical bill."
+    "Token rows do not identify the billing channel. The channel must come from explicit evidence or user configuration.",
+    "Subscription token logs do not expose a per-token monetary debit. No monetary amount or reference index is invented.",
+    "Priced API and purchased-credit amounts use the published rate card and requested tier, not a verified invoice. Historical rates and server-accepted tier need independent confirmation.",
+    "Purchased Credits have no API 272K context uplift or separate cache-write charge."
   ]
 }
