@@ -420,6 +420,9 @@ struct SpendDashboardModel: Equatable, Sendable {
             hideNativeCodexWhenOpenCodexPresent: hideNativeCodexWhenOpenCodexPresent)
         var conversionCache: [String: Double?] = [:]
         let classifiedInputs = visibleInputs.compactMap { input -> ClassifiedInput? in
+            // Subscription token history stays in token activity, not in monetary spend groups.
+            guard ProviderDescriptorRegistry.descriptor(for: input.provider).tokenCost.presentation != .tokensOnly
+            else { return nil }
             guard let sourceCurrencyCode = Self.currencyCode(input.snapshot.currencyCode) else { return nil }
             let targetCurrencyCode = UsageFormatter.effectiveCurrencyCode(
                 preferred: preferredCurrencyCode,
