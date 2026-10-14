@@ -91,3 +91,33 @@ Fork 提供手动 `Local patch checks` 工作流，用于有完整 Xcode 的 mac
 Codex 的速度说明由模型元数据提供，修改模型缓存后可用 `reapply-speed-description.py` 重应用“8 倍速度，8 倍消耗”。服务器刷新模型目录可能覆盖它；这是用户指定的显示文字，不是独立测速结论。
 
 应用包、构建目录、安装路径、PID、个人 Token/金额统计、登录数据、私钥和令牌不提交。编译出的本地签名版关闭自动更新且没有上游 CloudKit 权限，原版备份保持可恢复。
+
+## 2026-10-14 复算与下一次界面调整
+
+新增 `recalculate-usage.py` 和带官方来源的 `official-pricing.json`，将同一批缓存记录拆成三个独立结果：
+
+- API 价格估算：美元，适用 API 长上下文价阶和 API Fast/Ultrafast 倍率。
+- 额外 Credits 条件估算：Credits，缓存、输入和输出使用发布的 Credits 单价，Fast 2 倍、Ultrafast 6 倍，不使用 API 长上下文价阶。
+- 套餐参考用量：基于发布的 Credits 权重和套餐速度倍率（1/2.5/8）形成的参考指数，不表示官方实际额度扣减、真实 Credits 消耗或美元账单。不使用 API 长上下文价阶。
+
+计算命令：
+
+```bash
+python3 local-patch/recalculate-usage.py --date YYYY-MM-DD \
+  --output local-patch/reports/recalculated-usage-YYYY-MM-DD.json
+python3 -m unittest discover -s local-patch -p 'test_recalculate_usage.py'
+```
+
+冻结同一份数据库快照再计算，避免在活跃对话期间混用不同时间的总值。缓存 Token 从总输入中扣除，推理 Token 不在输出之外重复计费；不发明缺失模型、未知速度或历史日期的计价规则。报告是被 Git 忽略的个人数据。
+
+当前已安装的 v0.74.1-libukai.1 仍采用旧的混合金额算法。这个复算工具不等于已经重编译、安装或更新了菜单。下一轮应用改动需要：
+
+1. 让 `costUSD` 只保存 API 价格估算；Ultrafast API 使用 6 倍。
+2. 引入独立的订阅参考字段与单位，Fast 使用 2.5 倍、Ultrafast 使用 8 倍，且不使用 API 的 272K 加价。
+3. 不把参考指数标成实际 Credits 扣减或套餐实际剩余量。优先显示官方额度快照。
+4. 套餐、额外 Credits、API 三种计算结果不合并为一个总值；用户指定套餐模式，不从 `model_provider=openai` 猜测认证或计费池。
+5. 界面显示缓存、非缓存输入、输出的分项与明确单位；未知记录显示未分类/部分估算。
+6. 升级计价指纹，重算旧缓存，并加入超过 272K 后订阅价不变、API 价变化和模式切换的回归用例。
+7. 以官方余量与重置时间作为实际套餐状态；本地记录只覆盖被保留的本机用量。
+
+本轮复算只验证数学和拆分方法，不声称能从 Token 日志恢复官方未公布的套餐扣减公式。
