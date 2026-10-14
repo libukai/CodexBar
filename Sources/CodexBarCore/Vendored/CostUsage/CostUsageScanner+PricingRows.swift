@@ -1,6 +1,10 @@
 import Foundation
 
 extension CostUsageScanner {
+    static func isCodexPremiumPricingMode(_ mode: String?) -> Bool {
+        mode == "priority" || mode == "ultrafast"
+    }
+
     static func codexResolvedCostUSD(
         for row: CodexUsageRow,
         priorityTurns: [String: CodexPriorityTurnMetadata] = [:],
@@ -13,7 +17,7 @@ extension CostUsageScanner {
             return Double(authoritativeCostNanos) / self.costScale
         }
         let priorityMetadata = row.turnID.flatMap { priorityTurns[$0] }
-        let isPriority = priorityMetadata != nil || row.pricingMode == "priority"
+        let isPriority = priorityMetadata != nil || CostUsageScanner.isCodexPremiumPricingMode(row.pricingMode)
         let pricedModel = priorityMetadata.map { self.codexPriorityPricingModel(for: row, priorityMetadata: $0) }
             ?? row.pricingModel
             ?? row.model
@@ -29,6 +33,11 @@ extension CostUsageScanner {
             modelsDevCacheRoot: modelsDevCacheRoot,
             customPricing: overlay,
             pricingResolver: pricingResolver)
+        if row.pricingMode == "ultrafast",
+           let multiplier = CostUsagePricing.codexSubscriptionUltrafastMultiplier(model: pricedModel)
+        {
+            return baseCost.map { $0 * multiplier }
+        }
         guard isPriority else { return baseCost }
         guard let priorityCost = CostUsagePricing.codexPriorityCostUSD(
             model: pricedModel,

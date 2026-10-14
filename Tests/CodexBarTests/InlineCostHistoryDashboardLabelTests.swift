@@ -471,7 +471,7 @@ struct InlineCostHistoryDashboardLabelTests {
         ])
         #expect(dashboard.detailLines == [
             "Top model: test-model",
-            "Estimated from token usage · not a subscription bill",
+            "Subscription usage equivalent · Ultrafast at 8x",
         ])
 
         let japaneseAccessibilityLabels = CodexBarLocalizationOverride.$appLanguage.withValue("ja") {

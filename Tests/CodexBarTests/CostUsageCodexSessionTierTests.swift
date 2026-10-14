@@ -11,6 +11,63 @@ struct CostUsageCodexSessionTierTests {
         #expect(abs(priority - standard * 2) < 1e-9)
     }
 
+    @Test(arguments: ["legacy", "ledger", "bare"])
+    func `ultrafast uses the local eightfold subscription equivalent`(usageKind: String) throws {
+        for model in ["gpt-6.1-sol", "gpt-6-astra"] {
+            let standard = try Self.cost(serviceTier: "default", usageKind: usageKind, model: model)
+            let ultrafast = try Self.cost(serviceTier: "ultrafast", usageKind: usageKind, model: model)
+            #expect(abs(ultrafast - standard * 8) < 1e-9)
+            let priority = try Self.cost(serviceTier: "priority", usageKind: usageKind, model: model)
+            let fast = try Self.cost(serviceTier: "fast", usageKind: usageKind, model: model)
+            #expect(abs(priority - standard * 2) < 1e-9)
+            #expect(abs(fast - priority) < 1e-9)
+        }
+    }
+
+    @Test
+    func `ultrafast survives SQLite reopening and a switch back to standard`() async throws {
+        let env = try CostUsageTestEnvironment()
+        defer { env.cleanup() }
+        let day = try env.makeLocalNoon(year: 2026, month: 10, day: 14)
+        let timestamp = env.isoString(for: day)
+        func event(_ payload: [String: Any]) -> [String: Any] {
+            ["type": "event_msg", "timestamp": timestamp, "payload": payload]
+        }
+        func usage(_ turn: String) -> [String: Any] {
+            event(["type": "token_count", "turn_id": turn, "info": ["last_token_usage": [
+                "input_tokens": 200_000, "output_tokens": 10000,
+            ]]])
+        }
+        let records: [[String: Any]] = [
+            ["type": "session_meta", "timestamp": timestamp, "payload": ["id": "ultrafast-reopen"]],
+            event(["type": "thread_settings_applied", "thread_settings": ["service_tier": "ultrafast"]]),
+            event(["type": "task_started", "turn_id": "ultrafast-turn"]),
+            ["type": "turn_context", "timestamp": timestamp, "payload": ["model": "gpt-6.1-sol"]],
+            usage("ultrafast-turn"),
+            event(["type": "thread_settings_applied", "thread_settings": ["service_tier": "default"]]),
+            event(["type": "task_started", "turn_id": "standard-turn"]),
+            usage("standard-turn"),
+        ]
+        let file = try env.writeCodexSessionFile(
+            day: day, filename: "ultrafast-reopen.jsonl", contents: env.jsonl(Array(records.prefix(4))))
+        var options = CostUsageScanner.Options(
+            codexSessionsRoot: env.codexSessionsRoot,
+            cacheRoot: env.cacheRoot,
+            codexTraceDatabaseURL: env.root.appendingPathComponent("missing-traces.sqlite"))
+        options.refreshMinIntervalSeconds = 0
+        _ = CostUsageScanner.loadDailyReport(provider: .codex, since: day, until: day, now: day, options: options)
+        await CostUsageStore(cacheRoot: env.cacheRoot).closeConnectionForTesting()
+        let handle = try FileHandle(forWritingTo: file)
+        try handle.seekToEnd()
+        try handle.write(contentsOf: Data(env.jsonl(Array(records.dropFirst(4))).utf8))
+        try handle.close()
+        let resumed = CostUsageScanner.loadDailyReport(
+            provider: .codex, since: day, until: day, now: day.addingTimeInterval(1), options: options)
+        #expect(try abs(#require(resumed.summary?.totalCostUSD) - 4.5) < 1e-9)
+        let restored = CostUsageStore(cacheRoot: env.cacheRoot).syncLoadCodexCache(calendar: .current)
+        #expect(restored.files[file.path]?.codexRows?.map(\.pricingMode) == ["ultrafast", "standard"])
+    }
+
     @Test
     func `priority tier does not leak to an older explicit turn`() throws {
         let env = try CostUsageTestEnvironment()
@@ -197,7 +254,7 @@ struct CostUsageCodexSessionTierTests {
         #expect(parsed.rows.allSatisfy { $0.pricingMode == "priority" })
     }
 
-    private static func cost(serviceTier: String, usageKind: String) throws -> Double {
+    private static func cost(serviceTier: String, usageKind: String, model: String = "gpt-5.4") throws -> Double {
         let env = try CostUsageTestEnvironment()
         defer { env.cleanup() }
         let day = try env.makeLocalNoon(year: 2026, month: 9, day: 10)
@@ -207,10 +264,10 @@ struct CostUsageCodexSessionTierTests {
             ["type": "event_msg", "timestamp": timestamp, "payload": [
                 "type": "thread_settings_applied",
                 "thread_id": "tier-\(serviceTier)",
-                "thread_settings": ["model": "gpt-5.4", "service_tier": serviceTier],
+                "thread_settings": ["model": model, "service_tier": serviceTier],
             ]],
             ["type": "event_msg", "timestamp": timestamp, "payload": ["type": "task_started", "turn_id": "tier-turn"]],
-            ["type": "turn_context", "timestamp": timestamp, "payload": ["model": "gpt-5.4", "turn_id": "tier-turn"]],
+            ["type": "turn_context", "timestamp": timestamp, "payload": ["model": model, "turn_id": "tier-turn"]],
             ["type": "event_msg", "timestamp": timestamp, "payload": [
                 "type": "token_count", "turn_id": "tier-turn",
                 "info": ["last_token_usage": [
@@ -224,10 +281,10 @@ struct CostUsageCodexSessionTierTests {
         if usageKind == "ledger" {
             records[records.count - 1] = ["type": "token_usage_record", "timestamp": timestamp, "payload": [
                 "thread_id": "tier-\(serviceTier)", "response_id": "synthetic-response", "turn_id": "tier-turn",
-                "model": "gpt-5.4", "usage": usage, "thread_token_usage": usage,
+                "model": model, "usage": usage, "thread_token_usage": usage,
             ]]
         } else if usageKind == "bare" {
-            records[records.count - 1] = ["timestamp": timestamp, "model": "gpt-5.4", "usage": usage]
+            records[records.count - 1] = ["timestamp": timestamp, "model": model, "usage": usage]
         }
         _ = try env.writeCodexSessionFile(day: day, filename: "tier.jsonl", contents: env.jsonl(records))
         var options = CostUsageScanner.Options(

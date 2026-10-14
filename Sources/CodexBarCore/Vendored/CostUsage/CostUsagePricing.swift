@@ -190,7 +190,7 @@ enum CostUsagePricing {
     static func codexBuiltInPricingFingerprint() -> String {
         var parts = [
             "priorityInputTokenLimit=\(self.codexPriorityInputTokenLimit)",
-            "fastPricingDefinition=api-fast-usd-v1",
+            "fastPricingDefinition=local-subscription-ultrafast8-v1",
         ]
         for model in self.codex.keys.sorted() {
             guard let pricing = self.codex[model] else { continue }
@@ -660,14 +660,24 @@ enum CostUsagePricing {
     /// distinct from ChatGPT/Codex Fast credit multipliers, which do not represent a USD charge.
     static func codexAPIFastMultiplier(model: String) -> Double? {
         switch self.normalizeCodexModel(model) {
-        case "gpt-5.4", "gpt-5.4-mini", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-6-astra": 2
+        case "gpt-5.4", "gpt-5.4-mini", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-6-astra", "gpt-6.1-sol",
+             "gpt-6-sol",
+             "gpt-6-luna": 2
         case "gpt-5.5": 2.5
         default: nil
         }
     }
 
+    /// Local subscription-usage equivalent requested by the user; this is not an API bill.
+    static func codexSubscriptionUltrafastMultiplier(model: String) -> Double? {
+        switch self.normalizeCodexModel(model) {
+        case "gpt-6-astra", "gpt-6.1-sol": 8
+        default: nil
+        }
+    }
+
     private static func codexAPIFastAllowsLongContext(model: String) -> Bool {
-        self.normalizeCodexModel(model) == "gpt-6-astra"
+        ["gpt-6-astra", "gpt-6.1-sol", "gpt-6-sol", "gpt-6-luna"].contains(self.normalizeCodexModel(model))
     }
 
     static func codexCostUSD(

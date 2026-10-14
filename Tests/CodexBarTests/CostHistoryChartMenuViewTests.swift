@@ -256,7 +256,7 @@ struct CostHistoryChartMenuViewTests {
     func `Codex chart explains that its token estimate is not a subscription bill`() {
         #expect(
             CostHistoryChartMenuView.estimateDisclaimer(provider: .codex)
-                == "Estimated from token usage · not a subscription bill")
+                == "Subscription usage equivalent · Ultrafast at 8x")
         #expect(CostHistoryChartMenuView.estimateDisclaimer(provider: .claude) == nil)
     }
 

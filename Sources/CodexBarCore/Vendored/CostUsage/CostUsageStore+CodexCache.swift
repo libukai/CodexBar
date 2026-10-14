@@ -1180,7 +1180,7 @@ extension CostUsageStore {
             var aggregate = values[key] ?? .zero(day: row.day, model: row.model)
             aggregate.reasoningTokens += Int64(row.reasoning ?? 0)
             aggregate.requestCount += 1
-            let isPriority = row.pricingMode == "priority"
+            let isPriority = CostUsageScanner.isCodexPremiumPricingMode(row.pricingMode)
             let total = Int64(max(0, row.input) + max(0, row.output))
             if isPriority {
                 aggregate.priorityTokens += total

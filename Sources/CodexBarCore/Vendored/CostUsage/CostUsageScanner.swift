@@ -395,6 +395,15 @@ enum CostUsageScanner {
         /// Thread settings persist until replaced, including across resumed turns.
         var threadPriority: Bool?
         var priorityTurnIDs: Set<String>?
+        var threadServiceTier: String?
+        var serviceTiersByTurnID: [String: String]?
+
+        mutating func applyServiceTier(_ tier: String?) {
+            guard let tier else { return }
+            self.threadServiceTier = tier == "fast" ? "priority" : tier
+            self.threadPriority = ["priority", "fast"].contains(tier)
+        }
+
         var sessionID: String?
         var pendingLedgerMirrors: Set<String>?
         var pendingLedgerResponseID: String?
@@ -3496,7 +3505,7 @@ enum CostUsageScanner {
         case sessionMeta(CodexSessionMetadata)
         case turnContext(CodexTurnContextMetadata)
         case interAgentCommunication(triggerTurn: Bool)
-        case threadSettingsApplied(priority: Bool)
+        case threadSettingsApplied(serviceTier: String?)
         case taskStarted(turnID: String?)
         case taskCompleted(CodexTurnPerformanceCompletion)
         case tokenCount(CodexTokenCountRecord)
@@ -3780,7 +3789,7 @@ enum CostUsageScanner {
             if payload["type"] as? String == "thread_settings_applied" {
                 let settings = payload["thread_settings"] as? [String: Any]
                 return .threadSettingsApplied(
-                    priority: Self.codexModelEvidence(settings?["service_tier"] as? String) == "priority")
+                    serviceTier: Self.codexModelEvidence(settings?["service_tier"] as? String))
             }
             if payload["type"] as? String == "task_started" {
                 return .taskStarted(turnID: Self.codexTurnID(from: payload))
@@ -4416,7 +4425,8 @@ enum CostUsageScanner {
                 knownCostNanos: pricing?.knownCostNanos,
                 unpricedTokens: pricing?.unpricedTokens,
                 pricingModel: pricing?.pricingModel,
-                pricingMode: pricing?.pricingMode
+                pricingMode: (requestLedger.serviceTiersByTurnID?[turnID ?? ""] == "ultrafast" ? "ultrafast" : nil)
+                    ?? pricing?.pricingMode
                     ?? (requestLedger.priorityTurnIDs?.contains(turnID ?? "") == true ? "priority" : nil),
                 responseID: responseID,
                 requestMirrorKeys: mirrorKeys))
@@ -4897,13 +4907,16 @@ enum CostUsageScanner {
                 observePerformanceEffort(metadata)
             case .interAgentCommunication:
                 break
-            case let .threadSettingsApplied(priority):
-                requestLedger.threadPriority = priority
+            case let .threadSettingsApplied(serviceTier):
+                requestLedger.applyServiceTier(serviceTier)
             case .mirrorBoundary:
                 requestLedger.clearPendingMirrors()
             case let .taskStarted(turnID):
                 requestLedger.clearPendingMirrors()
                 currentTurnID = turnID
+                if requestLedger.serviceTiersByTurnID == nil { requestLedger.serviceTiersByTurnID = [:] }
+                let serviceTier = requestLedger.threadServiceTier
+                requestLedger.serviceTiersByTurnID?[turnID ?? ""] = serviceTier
                 if requestLedger.threadPriority == true {
                     if requestLedger.priorityTurnIDs == nil { requestLedger.priorityTurnIDs = [] }
                     requestLedger.priorityTurnIDs?.insert(turnID ?? "")
@@ -5417,6 +5430,7 @@ enum CostUsageScanner {
                 && requestLedger.turnModels.isEmpty && requestLedger.activeTurnID == nil
                 && requestLedger.sessionID == sessionId && requestLedger.threadPriority == nil
                 && requestLedger.priorityTurnIDs?.isEmpty != false
+                && requestLedger.threadServiceTier == nil && requestLedger.serviceTiersByTurnID?.isEmpty != false
                 && requestLedger.lastLedgerTotal == nil && requestLedger.lastLegacyTotal == nil
                 && (requestLedger.turnPerformance?.isEmpty ?? true)
                 ? nil : requestLedger,

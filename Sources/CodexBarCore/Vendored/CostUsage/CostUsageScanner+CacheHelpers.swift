@@ -86,7 +86,7 @@ extension CostUsageScanner {
                 breakdown.hasIncompletePricing = true
             }
             let priorityMetadata = row.turnID.flatMap { priorityTurns[$0] }
-            let isPriority = priorityMetadata != nil || row.pricingMode == "priority"
+            let isPriority = priorityMetadata != nil || CostUsageScanner.isCodexPremiumPricingMode(row.pricingMode)
             if isPriority {
                 let (total, overflow) = breakdown.priorityTokens.addingReportingOverflow(tokenCount)
                 breakdown.priorityTokens = overflow ? breakdown.priorityTokens : total
@@ -207,11 +207,11 @@ extension CostUsageScanner {
                 row.pricingMode = row.pricingMode ?? previous.pricingMode
             }
             let priorityMetadata = row.turnID.flatMap { priorityTurns[$0] }
-            let isPriority = priorityMetadata != nil || row.pricingMode == "priority"
+            let isPriority = priorityMetadata != nil || CostUsageScanner.isCodexPremiumPricingMode(row.pricingMode)
             row.pricingModel = priorityMetadata.map { Self.codexPriorityPricingModel(for: row, priorityMetadata: $0) }
                 ?? row.pricingModel
                 ?? row.model
-            row.pricingMode = isPriority ? "priority" : "standard"
+            row.pricingMode = row.pricingMode == "ultrafast" ? "ultrafast" : (isPriority ? "priority" : "standard")
             return row
         }
     }
@@ -248,7 +248,7 @@ extension CostUsageScanner {
 
             guard let tokenCount = CheckedSum.integers([row.input, row.output]) else { return (nil, nil) }
             let priorityMetadata = row.turnID.flatMap { priorityTurns[$0] }
-            let isPriority = priorityMetadata != nil || row.pricingMode == "priority"
+            let isPriority = priorityMetadata != nil || CostUsageScanner.isCodexPremiumPricingMode(row.pricingMode)
 
             if isPriority {
                 guard let total = CheckedSum.integers([priorityTokens[row.day]?[row.model] ?? 0, tokenCount])

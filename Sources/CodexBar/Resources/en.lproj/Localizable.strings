@@ -821,7 +821,7 @@
 
 /* Cost estimation */
 "cost_estimate_hint" = "Estimated from local logs · may differ from your bill";
-"codex_api_estimate_hint" = "Estimated from token usage · not a subscription bill";
+"codex_api_estimate_hint" = "Subscription usage equivalent · Ultrafast at 8x";
 "cost_data_explanation" = "Costs may be provider-reported or estimated from token usage at public API prices. Estimates are not subscription charges.";
 "No JetBrains IDE with AI Assistant detected. Install a JetBrains IDE and enable AI Assistant." = "No JetBrains IDE with AI Assistant detected. Install a JetBrains IDE and enable AI Assistant.";
 "OpenRouter API token not configured. Set OPENROUTER_API_KEY environment variable or configure in Settings." = "OpenRouter API token not configured. Set OPENROUTER_API_KEY environment variable or configure in Settings.";
