@@ -28,8 +28,14 @@ struct CostUsageCodexSessionTierTests {
     func `subscription API equivalent uses flat cache rates above 272K`(tier: String) throws {
         let multiplier: Double = tier == "ultrafast" ? 8 : (tier == "priority" ? 2.5 : 1)
         let row = CostUsageScanner.CodexUsageRow(
-            day: "2026-10-14", model: "gpt-6.1-sol", turnID: nil, eventIndex: nil,
-            input: 1_000_000, cached: 1_000_000, output: 0, pricingMode: tier)
+            day: "2026-10-14",
+            model: "gpt-6.1-sol",
+            turnID: nil,
+            eventIndex: nil,
+            input: 1_000_000,
+            cached: 1_000_000,
+            output: 0,
+            pricingMode: tier)
         let cost = try #require(CostUsageScanner.codexResolvedCostUSD(
             for: row, modelsDevCatalog: nil, modelsDevCacheRoot: nil))
         #expect(abs(cost - 0.1 * multiplier) < 1e-9)
